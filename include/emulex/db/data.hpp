@@ -39,7 +39,7 @@ class Data_ {
 Data BuildData(const char *buf, size_t len, bool iss = false);
 Data BuildData(size_t len, bool iss = false);
 Data JoinData(Data &a, Data &b);
-Data FromHex(const char *hex);
+Data DataFromHex(const char *hex);
 int hex2int(char input);
 struct DataComparer {
     bool operator()(const Data &first, const Data &second) const;

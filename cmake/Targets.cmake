@@ -25,7 +25,7 @@ file(GLOB sources src/*.cpp src/*.c src/db/*.cpp)
 
 
 if (BUILD_SHARED)
-    set(l_flags "${l_flags} -lboost_thread -lboost_system -lboost_regex -lz -led2k -lsqlite3")
+    set(l_flags "${l_flags} -lboost_thread -lboost_system -lboost_regex -lboost_filesystem -lz -led2k -lsqlite3 -lcrypto")
     add_library(emulex SHARED ${headers} ${sources})
     install(TARGETS emulex LIBRARY DESTINATION lib)
 else()

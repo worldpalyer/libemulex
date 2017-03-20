@@ -63,7 +63,7 @@ class SQLite_ {
    public:
     SQLite_(int cver);
     virtual ~SQLite_();
-    virtual void init(const char* spath, std::map<int, const char*> vsql);
+    void init(const char* spath, std::map<int, const char*> vsql);
     virtual int version();
     virtual void execscript(const char* sql);
     virtual void exec(const char* fmt, ...);

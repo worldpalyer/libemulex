@@ -219,7 +219,7 @@ Data JoinData(Data &a, Data &b) {
     return data;
 }
 
-Data FromHex(const char *hex) {
+Data DataFromHex(const char *hex) {
     size_t len = strlen(hex);
     if (len < 2 || len % 2) {
         return Data();
