@@ -31,3 +31,7 @@
 bin
 build
 cmake-build*
+
+CMakeLists.txt.user
+
+unit/run_tests

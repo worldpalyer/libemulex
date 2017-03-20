@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8)
 project(libed2k)
 set(libed2k_version 0.0.1)
 set(out_dir "${PROJECT_SOURCE_DIR}/bin")
-
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/module")
 ####### Build customization
 
 # Override from command line "CMake -D<OPTION>=TRUE/FALSE/0/1/ON/OFF"

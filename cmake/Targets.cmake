@@ -1,27 +1,35 @@
 if (BUILD_TESTS)
-        set(BOOST_LIBRARIES ${BOOST_LIBRARIES} unit_test_framework)
+        set(BOOST_LIBRARIES ${BOOST_LIBRARIES} unit_test_framework filesystem)
+        set(l_flags "${l_flags} -lboost_unit_test_framework")
 endif()
 
 set(executables loader)
 
+
 find_host_package(Boost 1.40 REQUIRED ${BOOST_LIBRARIES})
-include_directories(${Boost_INCLUDE_DIR} )
+FIND_PACKAGE(SQLite3 REQUIRED)
+if (NOT SQLITE3_FOUND)
+    message( FATAL_ERROR "the sqlite3 not found")
+endif()
+
+include_directories(${Boost_INCLUDE_DIR} SQLITE3_INCLUDE_DIRS)
 link_directories(${Boost_LIBRARY_DIRS})
 
 file(MAKE_DIRECTORY ${out_dir})
 
 
-file(GLOB headers include/emulex/*.hpp)
+file(GLOB headers include/emulex/*.hpp include/emulex/db/*.hpp)
 source_group(include FILES ${headers})
-file(GLOB sources src/*.cpp src/*.c)
+file(GLOB sources src/*.cpp src/*.c src/db/*.cpp)
+
 
 
 if (BUILD_SHARED)
-    set(l_flags "${l_flags} -lboost_thread -lboost_system -led2k -lboost_unit_test_framework")
-	add_library(emulex SHARED ${headers} ${sources})
+    set(l_flags "${l_flags} -lboost_thread -lboost_system -lboost_regex -lz -led2k -lsqlite3")
+    add_library(emulex SHARED ${headers} ${sources})
     install(TARGETS emulex LIBRARY DESTINATION lib)
 else()
-	add_library(emulex STATIC ${headers} ${sources})
+    add_library(emulex STATIC ${headers} ${sources})
     install(TARGETS emulex ARCHIVE DESTINATION lib)
 endif()
 
@@ -45,7 +53,7 @@ target_compile_definitions(emulex PRIVATE ${cxx_definitions})
          target_compile_definitions(${emulex_component} PRIVATE ${cxx_definitions})
          target_link_libraries(${emulex_component} emulex)
          # link boost and system libraries
-         TARGET_LINK_LIBRARIES(${emulex_component} ${Boost_LIBRARIES} ${COMMON_LIBRARIES})
+         TARGET_LINK_LIBRARIES(${emulex_component} ${Boost_LIBRARIES} ${COMMON_LIBRARIES} ${SQLITE3_LIBRARIES})
      endforeach(emulex_component)
  endif()
  
@@ -59,5 +67,5 @@ target_compile_definitions(emulex PRIVATE ${cxx_definitions})
      set_target_properties(run_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY  ${test_dir})
      target_compile_definitions(run_tests PRIVATE ${cxx_definitions})
      target_link_libraries(run_tests emulex)
-     TARGET_LINK_LIBRARIES(run_tests ${Boost_LIBRARIES} ${COMMON_LIBRARIES})
+     TARGET_LINK_LIBRARIES(run_tests ${Boost_LIBRARIES} ${COMMON_LIBRARIES} ${SQLITE3_LIBRARIES})
  endif(BUILD_TESTS)

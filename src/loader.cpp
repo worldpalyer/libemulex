@@ -73,7 +73,7 @@ void ed2k_session_::on_alert(libed2k::alert const& alert) {
     libed2k::alert* alert_ptr = (libed2k::alert*)&alert;
     if (libed2k::server_connection_initialized_alert* p =
             dynamic_cast<libed2k::server_connection_initialized_alert*>(alert_ptr)) {
-        DBG("ALERT: server initalized: cid: " << p->client_id);
+        DBG("ALERT: server initialized: cid: " << p->client_id);
     } else if (libed2k::server_name_resolved_alert* p = dynamic_cast<libed2k::server_name_resolved_alert*>(alert_ptr)) {
         DBG("ALERT: server name was resolved: " << p->endpoint);
     } else if (libed2k::server_status_alert* p = dynamic_cast<libed2k::server_status_alert*>(alert_ptr)) {

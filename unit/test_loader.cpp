@@ -2,7 +2,7 @@
 // Created by Centny on 3/16/17.
 //
 
-#include <boost/test/included/unit_test.hpp>
+#include <boost/test/unit_test.hpp>
 
 // class
 BOOST_AUTO_TEST_SUITE(test_loader)
