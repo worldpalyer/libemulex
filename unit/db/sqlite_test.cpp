@@ -8,6 +8,7 @@
 
 #ifndef sqlite_test_h
 #define sqlite_test_h
+
 #include "../../include/emulex/db/sqlite.hpp"
 #include <boost/test/unit_test.hpp>
 
@@ -145,14 +146,16 @@ BOOST_AUTO_TEST_CASE(db) {
                 auto stmt = lite->prepare("select name,value,value2 from xxx");
                 while (stmt->step()) {
                     auto bval1 = stmt->blobv(2);
-                    bval1->print();
-                    BOOST_CHECK_EQUAL(bval1->len, 0);
+                    if(bval1){
+                        BOOST_FAIL("fail...");
+                    }
                 }
             }
         }
         //
         // test prepare insert
         {
+            printf("test prepare insert\n");
             lite->exec("delete from xxx");
             auto ustmt = lite->prepare("insert into xxx (name,value) values (?,?)");
             auto name = BuildData("name", 4, true);
@@ -168,6 +171,7 @@ BOOST_AUTO_TEST_CASE(db) {
         }
     }
     {  // test open error
+        printf("test open error\n");
         try {
             auto tx = emulex::db::SQLite(new emulex::db::SQLite_(1));
             std::map<int, const char*> vsql;
@@ -179,6 +183,7 @@ BOOST_AUTO_TEST_CASE(db) {
         }
     }
     {  // test execscript error
+        printf("test execscript error\n");
         try {
             auto tx = emulex::db::SQLite(new emulex::db::SQLite_(1));
             std::map<int, const char*> vsql;
@@ -191,6 +196,7 @@ BOOST_AUTO_TEST_CASE(db) {
         }
     }
     {  // test exec error
+        printf("test exec error\n");
         try {
             auto tx = emulex::db::SQLite(new emulex::db::SQLite_(1));
             std::map<int, const char*> vsql;
@@ -404,4 +410,6 @@ BOOST_AUTO_TEST_CASE(db) {
 
 BOOST_AUTO_TEST_SUITE_END()
 
+
 #endif /* sqlite_test_h */
+

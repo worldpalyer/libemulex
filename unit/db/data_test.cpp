@@ -8,6 +8,7 @@
 
 #ifndef data_test_h
 #define data_test_h
+
 #include <vector>
 #include "../../include/emulex/db/data.hpp"
 #include <boost/test/unit_test.hpp>
