@@ -1,5 +1,5 @@
 if (BUILD_TESTS)
-        set(BOOST_LIBRARIES ${BOOST_LIBRARIES} unit_test_framework filesystem)
+        set(BOOST_LIBRARIES ${BOOST_LIBRARIES} unit_test_framework)
         set(l_flags "${l_flags} -lboost_unit_test_framework")
 endif()
 
@@ -7,10 +7,6 @@ set(executables loader)
 
 
 find_host_package(Boost 1.40 REQUIRED ${BOOST_LIBRARIES})
-FIND_PACKAGE(SQLite3 REQUIRED)
-if (NOT SQLITE3_FOUND)
-    message( FATAL_ERROR "the sqlite3 not found")
-endif()
 
 include_directories(${Boost_INCLUDE_DIR} SQLITE3_INCLUDE_DIRS)
 link_directories(${Boost_LIBRARY_DIRS})
@@ -25,7 +21,7 @@ file(GLOB sources src/*.cpp src/*.c src/db/*.cpp)
 
 
 if (BUILD_SHARED)
-    set(l_flags "${l_flags} -lboost_thread -lboost_system -lboost_regex -lboost_filesystem -lz -led2k -lsqlite3 -lcrypto")
+    set(l_flags "${l_flags} -lboost_thread -lboost_system -lboost_regex -led2k")
     add_library(emulex SHARED ${headers} ${sources})
     install(TARGETS emulex LIBRARY DESTINATION lib)
 else()

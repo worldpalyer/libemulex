@@ -1,6 +1,6 @@
 
 cmake_minimum_required(VERSION 2.8)
-project(libed2k)
+project(libemulex)
 set(libed2k_version 0.0.1)
 set(out_dir "${PROJECT_SOURCE_DIR}/bin")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/module")
