@@ -27,66 +27,58 @@
 #include <libed2k/filesystem.hpp>
 
 namespace emulex {
-class loader_;
-class db_interface_;
-typedef boost::shared_ptr<loader_> loader;
-typedef boost::shared_ptr<db_interface_> db_interface;
-
-class host {
-   public:
-    enum ntype {
-        normal = 0,
-        ed2k_server = 1,
-        kad_node = 2,
-    };
-    std::string name;
-    std::string addr;
-    uint16_t port;
-    ntype type = normal;
-};
-
-//
-class db_interface_ {
-   public:
-    virtual void load_settings(loader ld);
-};
 
 class ed2k_session_ {
    public:
     libed2k::fingerprint print;
     libed2k::session_settings settings;
     libed2k::kad_nodes_dat knd;
-    std::vector<host> hosts;
-    std::vector<libed2k::session*> ses;
+    libed2k::session* ses;
+    //
 
    private:
     libed2k::server_alert alert_placeholder;
 
    public:
     ed2k_session_();
+    virtual ~ed2k_session_();
     // load node data from file.
     virtual bool load_nodes(const std::string& filename);
-    // start kad network
-    virtual void start_kad(libed2k::session& ses, libed2k::kad_nodes_dat& knd);
-    // create session by host.
-    virtual libed2k::session* create_session(const host& n);
-    // init
-    virtual void init();
+    virtual void start();
+    virtual void server_connect(const std::string& name, const std::string& host, int port);
+    virtual void slave_server_connect(const std::string& name, const std::string& host, int port);
+    virtual void add_dht_node(const std::string& host, int port, const std::string& id);
+    virtual void search(std::string hash);
+    virtual void search(boost::uint64_t nMinSize, boost::uint64_t nMaxSize, unsigned int nSourcesCount,
+                        unsigned int nCompleteSourcesCount, const std::string& strFileType,
+                        const std::string& strFileExtension, const std::string& strCodec, unsigned int nMediaLength,
+                        unsigned int nMediaBitrate, const std::string& strQuery);
 
    protected:
     virtual void on_alert(libed2k::alert const& alert);
+    virtual void on_server_initialized(libed2k::server_connection_initialized_alert* alert);
+    virtual void on_server_resolved(libed2k::server_name_resolved_alert* alert);
+    virtual void on_server_status(libed2k::server_status_alert* alert);
+    virtual void on_server_message(libed2k::server_message_alert* alert);
+    virtual void on_server_identity(libed2k::server_identity_alert* alert);
+    //
+    virtual void on_server_shared(libed2k::shared_files_alert* alert);
 };
 
+    enum HashType{
+        MD4_H=1,
+        MD5_H=2,
+        SHA1_H=3,
+    };
 //
-class loader_ : public boost::enable_shared_from_this<loader_> {
-   public:
-    boost::asio::io_service& ios;
-    ed2k_session_ ed2k;
-    db_interface db;
+    class loader_ :public ed2k_session_{
+//   public:
+//    boost::shared_ptr<ed2k_session_> ed2k;
 
    public:
-    loader_(boost::asio::io_service& ios, db_interface db);
-    virtual void init();
+    loader_();
+    virtual void search_file(std::string hash,HashType type);
+    virtual void search_file(std::string query,std::string extension="",boost::uint64_t min_size=0, boost::uint64_t max_size=0);
 };
 
 //
