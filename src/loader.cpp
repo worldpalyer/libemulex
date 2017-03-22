@@ -39,6 +39,14 @@ void ed2k_session_::start() {
     ses->set_alert_dispatch(boost::bind(&ed2k_session_::on_alert, this, boost::placeholders::_1));
 }
 
+void ed2k_session_::stop() {
+    if (ses) {
+        delete ses;
+        ses = 0;
+        on_shutdown_completed();
+    }
+}
+
 void ed2k_session_::server_connect(const std::string& name, const std::string& host, int port) {
     libed2k::server_connection_parameters scp(name, host, port, 60, 60, 60, 60, 60);
     ses->server_connect(scp);
@@ -56,7 +64,7 @@ void ed2k_session_::add_dht_node(const std::string& host, int port, const std::s
 }
 
 void ed2k_session_::search(std::string hash) {
-    libed2k::search_request request=libed2k::generateSearchRequest(libed2k::md4_hash::fromString(hash));
+    libed2k::search_request request = libed2k::generateSearchRequest(libed2k::md4_hash::fromString(hash));
     ses->post_search_request(request);
 }
 
@@ -64,7 +72,9 @@ void ed2k_session_::search(boost::uint64_t nMinSize, boost::uint64_t nMaxSize, u
                            unsigned int nCompleteSourcesCount, const std::string& strFileType,
                            const std::string& strFileExtension, const std::string& strCodec, unsigned int nMediaLength,
                            unsigned int nMediaBitrate, const std::string& strQuery) {
-    libed2k::search_request request=libed2k::generateSearchRequest(nMinSize, nMaxSize, nSourcesCount, nCompleteSourcesCount, strFileType, strFileExtension, strCodec, nMediaLength, nMediaBitrate, strQuery);
+    libed2k::search_request request =
+        libed2k::generateSearchRequest(nMinSize, nMaxSize, nSourcesCount, nCompleteSourcesCount, strFileType,
+                                       strFileExtension, strCodec, nMediaLength, nMediaBitrate, strQuery);
     ses->post_search_request(request);
 }
 
@@ -137,25 +147,27 @@ void ed2k_session_::on_server_identity(libed2k::server_identity_alert* alert) {
     DBG("ed2k_session_: server_identity_alert: " << alert->server_hash << " name:  " << alert->server_name
                                                  << " descr: " << alert->server_descr);
 }
-void ed2k_session_::on_server_shared(libed2k::shared_files_alert* alert){
+void ed2k_session_::on_server_shared(libed2k::shared_files_alert* alert) {
     DBG("ed2k_session_: search RESULT: " << alert->m_files.m_collection.size());
 }
+void ed2k_session_::on_shutdown_completed() { DBG("ed2k_session_: shutdown completed"); }
 //
 loader_::loader_() {}
 
-    void loader_::search_file(std::string hash,HashType type){
-        switch(type){
-            case MD4_H:
-                ed2k_session_::search(hash);
-                break;
-            default:
-                break;
-        }
+void loader_::search_file(std::string hash, HashType type) {
+    switch (type) {
+        case MD4_H:
+            ed2k_session_::search(hash);
+            break;
+        default:
+            break;
     }
-    
-    void loader_::search_file(std::string query,std::string extension,boost::uint64_t min_size, boost::uint64_t max_size){
-        ed2k_session_::search(min_size, max_size, 0, 0, "", extension, "", 0, 0, query);
-    }
+}
+
+void loader_::search_file(std::string query, std::string extension, boost::uint64_t min_size,
+                          boost::uint64_t max_size) {
+    ed2k_session_::search(min_size, max_size, 0, 0, "", extension, "", 0, 0, query);
+}
 //
 // namespace emulex
 }

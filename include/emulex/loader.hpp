@@ -45,6 +45,7 @@ class ed2k_session_ {
     // load node data from file.
     virtual bool load_nodes(const std::string& filename);
     virtual void start();
+    virtual void stop();
     virtual void server_connect(const std::string& name, const std::string& host, int port);
     virtual void slave_server_connect(const std::string& name, const std::string& host, int port);
     virtual void add_dht_node(const std::string& host, int port, const std::string& id);
@@ -63,22 +64,24 @@ class ed2k_session_ {
     virtual void on_server_identity(libed2k::server_identity_alert* alert);
     //
     virtual void on_server_shared(libed2k::shared_files_alert* alert);
+    virtual void on_shutdown_completed();
 };
 
-    enum HashType{
-        MD4_H=1,
-        MD5_H=2,
-        SHA1_H=3,
-    };
+enum HashType {
+    MD4_H = 1,
+    MD5_H = 2,
+    SHA1_H = 3,
+};
 //
-    class loader_ :public ed2k_session_{
-//   public:
-//    boost::shared_ptr<ed2k_session_> ed2k;
+class loader_ : public ed2k_session_ {
+    //   public:
+    //    boost::shared_ptr<ed2k_session_> ed2k;
 
    public:
     loader_();
-    virtual void search_file(std::string hash,HashType type);
-    virtual void search_file(std::string query,std::string extension="",boost::uint64_t min_size=0, boost::uint64_t max_size=0);
+    virtual void search_file(std::string hash, HashType type);
+    virtual void search_file(std::string query, std::string extension = "", boost::uint64_t min_size = 0,
+                             boost::uint64_t max_size = 0);
 };
 
 //
