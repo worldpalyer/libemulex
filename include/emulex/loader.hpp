@@ -54,6 +54,7 @@ class ed2k_session_ {
                         unsigned int nCompleteSourcesCount, const std::string& strFileType,
                         const std::string& strFileExtension, const std::string& strCodec, unsigned int nMediaLength,
                         unsigned int nMediaBitrate, const std::string& strQuery);
+    virtual void add_transfer(const std::string& hash, const std::string& path, boost::uint64_t size,const std::vector<std::string>& parts=std::vector<std::string>(),const std::string& resources = "",bool seed=false);
 
    protected:
     virtual void on_alert(libed2k::alert const& alert);
@@ -64,6 +65,7 @@ class ed2k_session_ {
     virtual void on_server_identity(libed2k::server_identity_alert* alert);
     //
     virtual void on_server_shared(libed2k::shared_files_alert* alert);
+    virtual void on_finished_transfer(libed2k::finished_transfer_alert* alert);
     virtual void on_shutdown_completed();
 };
 

@@ -22,7 +22,7 @@ file(GLOB sources_node src/node/*.cpp src/node/*.cc)
 
 
 if (BUILD_SHARED)
-    set(l_flags "${l_flags} -lboost_thread -lboost_system -lboost_regex -led2k")
+    set(l_flags "${l_flags} -lboost_thread -lboost_system -lboost_regex -led2k -lcrypto")
     add_library(emulex SHARED ${headers} ${sources})
     install(TARGETS emulex LIBRARY DESTINATION lib)
 else()

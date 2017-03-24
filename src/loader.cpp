@@ -78,6 +78,19 @@ void ed2k_session_::search(boost::uint64_t nMinSize, boost::uint64_t nMaxSize, u
     ses->post_search_request(request);
 }
 
+void ed2k_session_::add_transfer(const std::string& hash, const std::string& path, boost::uint64_t size,const std::vector<std::string>& parts,const std::string& resources,bool seed) {
+    libed2k::add_transfer_params param;
+    param.file_hash = libed2k::md4_hash::fromString(hash);
+    param.file_path = path;
+    param.file_size = size;
+    param.resources = resources;
+    BOOST_FOREACH(const std::string& part,parts){
+        param.piece_hashses.push_back(libed2k::md4_hash::fromString(part));
+    }
+    param.seed_mode=seed;
+    ses->add_transfer(param);
+}
+
 void ed2k_session_::on_alert(libed2k::alert const& alert) {
     libed2k::alert* alert_ptr = (libed2k::alert*)&alert;
     if (libed2k::server_connection_initialized_alert* p =
@@ -99,12 +112,6 @@ void ed2k_session_::on_alert(libed2k::alert const& alert) {
         DBG("ed2k_session_: peer disconnected: " << libed2k::int2ipstr(p->m_np.m_nIP));
     } else if (libed2k::peer_captcha_request_alert* p = dynamic_cast<libed2k::peer_captcha_request_alert*>(alert_ptr)) {
         DBG("ed2k_session_: captcha request ");
-        //        FILE* fp = fopen("./captcha.bmp", "wb");
-        //        if (fp) {
-        //            fwrite(&p->m_captcha[0], 1, p->m_captcha.size(), fp);
-        //            fclose(fp);
-        //        }
-
     } else if (libed2k::peer_captcha_result_alert* p = dynamic_cast<libed2k::peer_captcha_result_alert*>(alert_ptr)) {
         DBG("ed2k_session_: captcha result " << p->m_nResult);
     } else if (libed2k::peer_connected_alert* p = dynamic_cast<libed2k::peer_connected_alert*>(alert_ptr)) {
@@ -126,6 +133,8 @@ void ed2k_session_::on_alert(libed2k::alert const& alert) {
             DBG("ed2k_session_: transfer_params_alert, add transfer for: " << p->m_atp.file_path);
             ses->add_transfer(p->m_atp);
         }
+    } else if (libed2k::finished_transfer_alert* p = dynamic_cast<libed2k::finished_transfer_alert*>(alert_ptr)) {
+        on_finished_transfer(p);
     } else {
         DBG("ed2k_session_: Unknown alert: " << alert_ptr->message());
     }
@@ -149,6 +158,9 @@ void ed2k_session_::on_server_identity(libed2k::server_identity_alert* alert) {
 }
 void ed2k_session_::on_server_shared(libed2k::shared_files_alert* alert) {
     DBG("ed2k_session_: search RESULT: " << alert->m_files.m_collection.size());
+}
+void ed2k_session_::on_finished_transfer(libed2k::finished_transfer_alert* alert){
+    DBG("ed2k_session_: finished transfer: " << alert->m_handle.save_path());
 }
 void ed2k_session_::on_shutdown_completed() { DBG("ed2k_session_: shutdown completed"); }
 //
