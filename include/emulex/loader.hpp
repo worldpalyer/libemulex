@@ -28,6 +28,10 @@
 
 namespace emulex {
 
+// load node data from file.
+bool load_nodes(libed2k::kad_nodes_dat& knd, const std::string& filename);
+bool load_server_met(libed2k::server_met& sm, const std::string& filename);
+
 class ed2k_session_ {
    public:
     libed2k::fingerprint print;
@@ -42,8 +46,6 @@ class ed2k_session_ {
    public:
     ed2k_session_();
     virtual ~ed2k_session_();
-    // load node data from file.
-    virtual bool load_nodes(const std::string& filename);
     virtual void start();
     virtual void stop();
     virtual void server_connect(const std::string& name, const std::string& host, int port);
@@ -54,7 +56,9 @@ class ed2k_session_ {
                         unsigned int nCompleteSourcesCount, const std::string& strFileType,
                         const std::string& strFileExtension, const std::string& strCodec, unsigned int nMediaLength,
                         unsigned int nMediaBitrate, const std::string& strQuery);
-    virtual void add_transfer(const std::string& hash, const std::string& path, boost::uint64_t size,const std::vector<std::string>& parts=std::vector<std::string>(),const std::string& resources = "",bool seed=false);
+    virtual void add_transfer(const std::string& hash, const std::string& path, boost::uint64_t size,
+                              const std::vector<std::string>& parts = std::vector<std::string>(),
+                              const std::string& resources = "", bool seed = false);
 
    protected:
     virtual void on_alert(libed2k::alert const& alert);

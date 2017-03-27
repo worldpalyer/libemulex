@@ -4,15 +4,7 @@
 
 namespace emulex {
 
-ed2k_session_::ed2k_session_() : ses(0), alert_placeholder("", "", 10) {}
-
-ed2k_session_::~ed2k_session_() {
-    if (ses) {
-        delete ses;
-        ses = 0;
-    }
-}
-bool ed2k_session_::load_nodes(const std::string& filename) {
+bool load_nodes(libed2k::kad_nodes_dat& knd, const std::string& filename) {
     using libed2k::kad_nodes_dat;
     using libed2k::kad_entry;
     DBG("File nodes: " << filename);
@@ -30,6 +22,32 @@ bool ed2k_session_::load_nodes(const std::string& filename) {
         return false;
     }
     return true;
+}
+    
+bool load_server_met(libed2k::server_met& sm, const std::string& filename) {
+    std::ifstream ifs(filename, std::ios_base::binary);
+    if (ifs) {
+        libed2k::archive::ed2k_iarchive ifa(ifs);
+        try {
+            ifa >> sm;
+        } catch (libed2k::libed2k_exception& e) {
+            DBG("error on load servers.met " << e.what());
+            return false;
+        }
+    } else {
+        DBG("unable to open " << filename);
+        return false;
+    }
+    return true;
+}
+
+ed2k_session_::ed2k_session_() : ses(0), alert_placeholder("", "", 10) {}
+
+ed2k_session_::~ed2k_session_() {
+    if (ses) {
+        delete ses;
+        ses = 0;
+    }
 }
 
 void ed2k_session_::start() {
@@ -78,16 +96,17 @@ void ed2k_session_::search(boost::uint64_t nMinSize, boost::uint64_t nMaxSize, u
     ses->post_search_request(request);
 }
 
-void ed2k_session_::add_transfer(const std::string& hash, const std::string& path, boost::uint64_t size,const std::vector<std::string>& parts,const std::string& resources,bool seed) {
+void ed2k_session_::add_transfer(const std::string& hash, const std::string& path, boost::uint64_t size,
+                                 const std::vector<std::string>& parts, const std::string& resources, bool seed) {
     libed2k::add_transfer_params param;
     param.file_hash = libed2k::md4_hash::fromString(hash);
     param.file_path = path;
     param.file_size = size;
     param.resources = resources;
-    BOOST_FOREACH(const std::string& part,parts){
+    BOOST_FOREACH (const std::string& part, parts) {
         param.piece_hashses.push_back(libed2k::md4_hash::fromString(part));
     }
-    param.seed_mode=seed;
+    param.seed_mode = seed;
     ses->add_transfer(param);
 }
 
@@ -159,7 +178,7 @@ void ed2k_session_::on_server_identity(libed2k::server_identity_alert* alert) {
 void ed2k_session_::on_server_shared(libed2k::shared_files_alert* alert) {
     DBG("ed2k_session_: search RESULT: " << alert->m_files.m_collection.size());
 }
-void ed2k_session_::on_finished_transfer(libed2k::finished_transfer_alert* alert){
+void ed2k_session_::on_finished_transfer(libed2k::finished_transfer_alert* alert) {
     DBG("ed2k_session_: finished transfer: " << alert->m_handle.save_path());
 }
 void ed2k_session_::on_shutdown_completed() { DBG("ed2k_session_: shutdown completed"); }
