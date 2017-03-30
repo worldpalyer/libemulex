@@ -59,6 +59,7 @@ class ed2k_session_ {
     virtual void add_transfer(const std::string& hash, const std::string& path, boost::uint64_t size,
                               const std::vector<std::string>& parts = std::vector<std::string>(),
                               const std::string& resources = "", bool seed = false);
+    virtual std::vector<libed2k::transfer_handle> list_transfter();
 
    protected:
     virtual void on_alert(libed2k::alert const& alert);

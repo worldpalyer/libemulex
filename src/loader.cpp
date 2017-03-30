@@ -109,6 +109,10 @@ void ed2k_session_::add_transfer(const std::string& hash, const std::string& pat
     param.seed_mode = seed;
     ses->add_transfer(param);
 }
+    
+std::vector<libed2k::transfer_handle> ed2k_session_::list_transfter(){
+     return ses->get_transfers();
+}
 
 void ed2k_session_::on_alert(libed2k::alert const& alert) {
     libed2k::alert* alert_ptr = (libed2k::alert*)&alert;
