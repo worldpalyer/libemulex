@@ -1,6 +1,7 @@
 
 #include "emulex/loader.hpp"
 #include <fstream>
+#include <libed2k/bencode.hpp>
 
 namespace emulex {
 
@@ -23,7 +24,7 @@ bool load_nodes(libed2k::kad_nodes_dat& knd, const std::string& filename) {
     }
     return true;
 }
-    
+
 bool load_server_met(libed2k::server_met& sm, const std::string& filename) {
     std::ifstream ifs(filename, std::ios_base::binary);
     if (ifs) {
@@ -41,7 +42,11 @@ bool load_server_met(libed2k::server_met& sm, const std::string& filename) {
     return true;
 }
 
-ed2k_session_::ed2k_session_() : ses(0), alert_placeholder("", "", 10) {}
+ed2k_session_::ed2k_session_()
+    : ses(0),
+      fs_timer_delay(boost::posix_time::millisec(10000)),
+      fs_timer(timer_ios, fs_timer_delay),
+      alert_placeholder("", "", 10) {}
 
 ed2k_session_::~ed2k_session_() {
     if (ses) {
@@ -55,6 +60,7 @@ void ed2k_session_::start() {
     ses = new libed2k::session(print, "0.0.0.0", settings);
     ses->set_alert_mask(libed2k::alert::all_categories);
     ses->set_alert_dispatch(boost::bind(&ed2k_session_::on_alert, this, boost::placeholders::_1));
+    timer_thr = new boost::thread(boost::bind(&libed2k::io_service::run, &timer_ios));
 }
 
 void ed2k_session_::stop() {
@@ -62,6 +68,9 @@ void ed2k_session_::stop() {
         delete ses;
         ses = 0;
         on_shutdown_completed();
+    }
+    if (timer_thr) {
+        timer_ios.stop();
     }
 }
 
@@ -109,9 +118,56 @@ void ed2k_session_::add_transfer(const std::string& hash, const std::string& pat
     param.seed_mode = seed;
     ses->add_transfer(param);
 }
-    
-std::vector<libed2k::transfer_handle> ed2k_session_::list_transfter(){
-     return ses->get_transfers();
+
+std::vector<libed2k::transfer_handle> ed2k_session_::list_transfter() { return ses->get_transfers(); }
+
+bool ed2k_session_::restore(std::string path) {
+    std::ifstream ifs(path.c_str(), std::ios_base::in | std::ios_base::binary);
+    if (!ifs) {
+        return false;
+    }
+    libed2k::transfer_resume_data trd;
+    libed2k::archive::ed2k_iarchive ia(ifs);
+    ia >> trd;
+    libed2k::add_transfer_params params;
+    params.seed_mode = false;
+    params.file_path = trd.m_filename.m_collection;
+    params.file_size = trd.m_filesize;
+
+    if (trd.m_fast_resume_data.size() > 0) {
+        params.resume_data = const_cast<std::vector<char>*>(
+            &trd.m_fast_resume_data.getTagByNameId(libed2k::FT_FAST_RESUME_DATA)->asBlob());
+    }
+
+    params.file_hash = trd.m_hash;
+    ses->add_transfer(params);
+    return true;
+}
+
+void ed2k_session_::pause(libed2k::md4_hash& hash) {
+    std::vector<libed2k::transfer_handle> ts = list_transfter();
+    BOOST_FOREACH (const libed2k::transfer_handle& t, ts) {
+        if (t.hash() != hash) {
+            continue;
+        }
+        if (t.is_valid()) {
+            t.pause();
+        }
+        return;
+    }
+}
+
+void ed2k_session_::resume(libed2k::md4_hash& hash) {
+    std::vector<libed2k::transfer_handle> ts = list_transfter();
+    BOOST_FOREACH (const libed2k::transfer_handle& t, ts) {
+        if (t.hash() != hash) {
+            continue;
+        }
+        if (t.is_paused()) {
+            t.resume();
+        }
+        return;
+    }
 }
 
 void ed2k_session_::on_alert(libed2k::alert const& alert) {
@@ -147,8 +203,8 @@ void ed2k_session_::on_alert(libed2k::alert const& alert) {
         for (size_t n = 0; n < p->m_dirs.size(); ++n) {
             DBG("ed2k_session_: DIR: " << p->m_dirs[n]);
         }
-    } else if (dynamic_cast<libed2k::save_resume_data_alert*>(alert_ptr)) {
-        DBG("ed2k_session_: save_resume_data_alert");
+    } else if (libed2k::save_resume_data_alert* p = dynamic_cast<libed2k::save_resume_data_alert*>(alert_ptr)) {
+        on_resume_data_transfer(p);
     } else if (dynamic_cast<libed2k::save_resume_data_failed_alert*>(alert_ptr)) {
         DBG("ed2k_session_: save_resume_data_failed_alert");
     } else if (libed2k::transfer_params_alert* p = dynamic_cast<libed2k::transfer_params_alert*>(alert_ptr)) {
@@ -185,7 +241,54 @@ void ed2k_session_::on_server_shared(libed2k::shared_files_alert* alert) {
 void ed2k_session_::on_finished_transfer(libed2k::finished_transfer_alert* alert) {
     DBG("ed2k_session_: finished transfer: " << alert->m_handle.save_path());
 }
+void ed2k_session_::on_resume_data_transfer(libed2k::save_resume_data_alert* alert) {
+    if (!alert->m_handle.is_valid()) return;
+    if (alert->m_handle.is_seed()) return;
+    try {
+        // write fast resume data
+        std::vector<char> fastResumeData;
+        libed2k::bencode(std::back_inserter(fastResumeData), *alert->resume_data);
+        libed2k::transfer_resume_data trd(alert->m_handle.hash(), alert->m_handle.name(), alert->m_handle.size(), false,
+                                          fastResumeData);
+        std::string tcfg = alert->m_handle.save_path() + ".ex";
+        std::ofstream fs(tcfg.c_str(), std::ios_base::out | std::ios_base::binary);
+        if (fs) {
+            libed2k::archive::ed2k_oarchive oa(fs);
+            oa << trd;
+            fs.close();
+            DBG("ed2k_session_: resume data save success on" << tcfg);
+        } else {
+            ERR("ed2k_session_: resume data save fail with open error on" << tcfg);
+        }
+    } catch (std::exception& e) {
+        ERR("ed2k_session_: resume data save fail with " << e.message() << " on" << tcfg);
+    }
+}
 void ed2k_session_::on_shutdown_completed() { DBG("ed2k_session_: shutdown completed"); }
+
+void ed2k_session_::save_fast_resume(const boost::system::error_code& ec) {
+    if (ec == boost::asio::error::operation_aborted) {
+        return;
+    }
+    // actually we save nothing - only for test
+    std::vector<libed2k::transfer_handle> v = ses->get_transfers();
+    for (std::vector<libed2k::transfer_handle>::iterator i = v.begin(); i != v.end(); ++i) {
+        libed2k::transfer_handle h = *i;
+        if (!h.is_valid() || h.is_seed()) continue;
+        try {
+            if (h.status().state == libed2k::transfer_status::checking_files ||
+                h.status().state == libed2k::transfer_status::queued_for_checking)
+                continue;
+            if (h.need_save_resume_data()) {
+                h.save_resume_data();
+            }
+        } catch (libed2k::libed2k_exception& e) {
+            ERR("save error: " << e.what());
+        }
+    }
+    fs_timer.expires_at(fs_timer.expires_at() + fs_timer_delay);
+    fs_timer.async_wait(boost::bind(&ed2k_session_::save_fast_resume, this, boost::asio::placeholders::error));
+}
 //
 loader_::loader_() {}
 

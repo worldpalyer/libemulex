@@ -38,7 +38,12 @@ class ed2k_session_ {
     libed2k::session_settings settings;
     libed2k::kad_nodes_dat knd;
     libed2k::session* ses;
+    boost::posix_time::time_duration fs_timer_delay;
     //
+   protected:
+    boost::thread* timer_thr;
+    libed2k::io_service timer_ios;
+    boost::asio::deadline_timer fs_timer;
 
    private:
     libed2k::server_alert alert_placeholder;
@@ -60,6 +65,9 @@ class ed2k_session_ {
                               const std::vector<std::string>& parts = std::vector<std::string>(),
                               const std::string& resources = "", bool seed = false);
     virtual std::vector<libed2k::transfer_handle> list_transfter();
+    virtual bool restore(std::string path);
+    virtual void pause(libed2k::md4_hash& hash);
+    virtual void resume(libed2k::md4_hash& hash);
 
    protected:
     virtual void on_alert(libed2k::alert const& alert);
@@ -71,7 +79,9 @@ class ed2k_session_ {
     //
     virtual void on_server_shared(libed2k::shared_files_alert* alert);
     virtual void on_finished_transfer(libed2k::finished_transfer_alert* alert);
+    virtual void on_resume_data_transfer(libed2k::save_resume_data_alert* alert);
     virtual void on_shutdown_completed();
+    virtual void save_fast_resume(const boost::system::error_code& ec);
 };
 
 enum HashType {
