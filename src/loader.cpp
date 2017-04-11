@@ -204,7 +204,7 @@ void ed2k_session_::on_alert(libed2k::alert const& alert) {
             DBG("ed2k_session_: DIR: " << p->m_dirs[n]);
         }
     } else if (libed2k::save_resume_data_alert* p = dynamic_cast<libed2k::save_resume_data_alert*>(alert_ptr)) {
-        on_resume_data_transfer(p);
+        on_save_resume_data_transfer(p);
     } else if (dynamic_cast<libed2k::save_resume_data_failed_alert*>(alert_ptr)) {
         DBG("ed2k_session_: save_resume_data_failed_alert");
     } else if (libed2k::transfer_params_alert* p = dynamic_cast<libed2k::transfer_params_alert*>(alert_ptr)) {
@@ -212,6 +212,12 @@ void ed2k_session_::on_alert(libed2k::alert const& alert) {
             DBG("ed2k_session_: transfer_params_alert, add transfer for: " << p->m_atp.file_path);
             ses->add_transfer(p->m_atp);
         }
+    } else if (libed2k::resumed_transfer_alert* p = dynamic_cast<libed2k::resumed_transfer_alert*>(alert_ptr)) {
+        on_resumed_data_transfer(p);
+    } else if (libed2k::paused_transfer_alert* p = dynamic_cast<libed2k::paused_transfer_alert*>(alert_ptr)) {
+        on_paused_data_transfer(p);
+    } else if (libed2k::deleted_transfer_alert* p = dynamic_cast<libed2k::deleted_transfer_alert*>(alert_ptr)) {
+        on_deleted_data_transfer(p);
     } else if (libed2k::finished_transfer_alert* p = dynamic_cast<libed2k::finished_transfer_alert*>(alert_ptr)) {
         on_finished_transfer(p);
     } else {
@@ -241,7 +247,7 @@ void ed2k_session_::on_server_shared(libed2k::shared_files_alert* alert) {
 void ed2k_session_::on_finished_transfer(libed2k::finished_transfer_alert* alert) {
     DBG("ed2k_session_: finished transfer: " << alert->m_handle.save_path());
 }
-void ed2k_session_::on_resume_data_transfer(libed2k::save_resume_data_alert* alert) {
+void ed2k_session_::on_save_resume_data_transfer(libed2k::save_resume_data_alert* alert) {
     if (!alert->m_handle.is_valid()) return;
     if (alert->m_handle.is_seed()) return;
     try {
@@ -263,6 +269,15 @@ void ed2k_session_::on_resume_data_transfer(libed2k::save_resume_data_alert* ale
     } catch (std::exception& e) {
         ERR("ed2k_session_: resume data save fail with " << e.message() << " on" << tcfg);
     }
+}
+void ed2k_session_::on_resumed_data_transfer(libed2k::resumed_transfer_alert* alert) {
+    DBG("ed2k_session_: on_resumed_data_transfer" << alert->m_handle.hash());
+}
+void ed2k_session_::on_paused_data_transfer(libed2k::paused_transfer_alert* alert) {
+    DBG("ed2k_session_: on_paused_data_transfer" << alert->m_handle.hash());
+}
+void ed2k_session_::on_deleted_data_transfer(libed2k::deleted_transfer_alert* alert) {
+    DBG("ed2k_session_: on_deleted_data_transfer" << alert->m_handle.hash());
 }
 void ed2k_session_::on_shutdown_completed() { DBG("ed2k_session_: shutdown completed"); }
 
