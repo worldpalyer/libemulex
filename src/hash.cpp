@@ -29,12 +29,15 @@ file_hash read_file_hash(std::string filepath, bool bmd4, bool bmd5, bool bsha1)
 }
 
 std::string hash_tos(const char* hash, size_t size) {
-    char buf[2 * size + 1];
+	size_t blen = 2 * size + 1;
+    char *buf=new char[blen];
     for (size_t i = 0; i < size; i++) {
         sprintf(buf + i * 2, "%02x", (unsigned char)hash[i]);
     }
     buf[2 * size] = 0;
-    return std::string(buf);
+    std::string res= std::string(buf);
+	delete buf;
+	return res;
 }
 
 file_hash read_file_hash(std::fstream* file, bool bmd4, bool bmd5, bool bsha1) {

@@ -37,3 +37,5 @@ CMakeLists.txt.user
 unit/run_tests
 
 CMakeLists.txt.user
+/build64
+/unit/Debug

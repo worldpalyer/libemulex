@@ -14,6 +14,11 @@ option (BUILD_SHARED "Build shared library." TRUE)
 option (DISABLE_DHT "Enable KAD support" FALSE)
 option (UPNP_VERBOSE "Verbose output for UPnP" FALSE)
 option (DHT_VERBOSE "Verbose output for DHT" FALSE)
+option (DEPS_DIR "the deps prefix location" FALSE)
+
+if (NOT DEPS_DIR)
+    set(DEPS_DIR "${PROJECT_SOURCE_DIR}/../deps")
+endif()
 
 include(cmake/Environment.cmake)
 include(cmake/Linux.cmake)

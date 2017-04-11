@@ -32,7 +32,7 @@ endif()
 
 ## Boost libraries
 #set(Boost_USE_STATIC_RUNTIME OFF)
-set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_STATIC_LIBS OFF)
 set(BOOST_LIBRARIES system thread random date_time regex)
 
 if (BUILD_TESTS)
@@ -56,3 +56,6 @@ endif()
 
 message(STATUS "UPNP_VERBOSE	= ${UPNP_VERBOSE}")
 
+message(STATUS "PREFIX    = ${CMAKE_INSTALL_PREFIX}")
+
+message(STATUS "DEPS_DIR    = ${DEPS_DIR}")
