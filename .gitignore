@@ -39,3 +39,5 @@ unit/run_tests
 CMakeLists.txt.user
 /build64
 /unit/Debug
+
+unit/run_emulex_tests
