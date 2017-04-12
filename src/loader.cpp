@@ -244,6 +244,10 @@ void ed2k_session_::on_alert(libed2k::alert const& alert) {
         on_state_changed(p);
     } else if (libed2k::added_transfer_alert* p = dynamic_cast<libed2k::added_transfer_alert*>(alert_ptr)) {
         on_transfer_added(p);
+    } else if (libed2k::portmap_alert* p = dynamic_cast<libed2k::portmap_alert*>(alert_ptr)) {
+        on_portmap(p);
+    } else if (libed2k::portmap_error_alert* p = dynamic_cast<libed2k::portmap_error_alert*>(alert_ptr)) {
+        on_portmap_error(p);
     } else {
         DBG("ed2k_session_: Unknown alert: " << alert_ptr->message());
     }
@@ -311,6 +315,9 @@ void ed2k_session_::on_transfer_added(libed2k::added_transfer_alert* alert){
 }
 void ed2k_session_::on_portmap(libed2k::portmap_alert* alert){
     DBG("ed2k_session_: on_portmap");
+}
+void ed2k_session_::on_portmap_error(libed2k::portmap_error_alert* alert){
+    DBG("ed2k_session_: on_portmap_error");
 }
 void ed2k_session_::on_shutdown_completed() { DBG("ed2k_session_: shutdown completed"); }
 
