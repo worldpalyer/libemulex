@@ -60,6 +60,7 @@ void ed2k_session_::start() {
     ses = new libed2k::session(print, "0.0.0.0", settings);
     ses->set_alert_mask(libed2k::alert::all_categories);
     ses->set_alert_dispatch(boost::bind(&ed2k_session_::on_alert, this, boost::placeholders::_1));
+    ses->start_upnp();
     fs_timer.async_wait(boost::bind(&ed2k_session_::save_fast_resume, this, boost::asio::placeholders::error));
     timer_thr = new boost::thread(boost::bind(&libed2k::io_service::run, &timer_ios));
 }
@@ -239,6 +240,10 @@ void ed2k_session_::on_alert(libed2k::alert const& alert) {
         on_deleted_data_transfer(p);
     } else if (libed2k::finished_transfer_alert* p = dynamic_cast<libed2k::finished_transfer_alert*>(alert_ptr)) {
         on_finished_transfer(p);
+    } else if (libed2k::state_changed_alert* p = dynamic_cast<libed2k::state_changed_alert*>(alert_ptr)) {
+        on_state_changed(p);
+    } else if (libed2k::added_transfer_alert* p = dynamic_cast<libed2k::added_transfer_alert*>(alert_ptr)) {
+        on_transfer_added(p);
     } else {
         DBG("ed2k_session_: Unknown alert: " << alert_ptr->message());
     }
@@ -297,6 +302,15 @@ void ed2k_session_::on_paused_data_transfer(libed2k::paused_transfer_alert* aler
 }
 void ed2k_session_::on_deleted_data_transfer(libed2k::deleted_transfer_alert* alert) {
     DBG("ed2k_session_: on_deleted_data_transfer" << alert->m_hash);
+}
+void ed2k_session_::on_state_changed(libed2k::state_changed_alert* alert){
+    DBG("ed2k_session_: on_state_changed" << alert->m_handle.hash());
+}
+void ed2k_session_::on_transfer_added(libed2k::added_transfer_alert* alert){
+    DBG("ed2k_session_: on_transfer_added" << alert->m_handle.hash());
+}
+void ed2k_session_::on_portmap(libed2k::portmap_alert* alert){
+    DBG("ed2k_session_: on_portmap");
 }
 void ed2k_session_::on_shutdown_completed() { DBG("ed2k_session_: shutdown completed"); }
 

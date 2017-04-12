@@ -84,6 +84,9 @@ class ed2k_session_ {
     virtual void on_resumed_data_transfer(libed2k::resumed_transfer_alert* alert);
     virtual void on_paused_data_transfer(libed2k::paused_transfer_alert* alert);
     virtual void on_deleted_data_transfer(libed2k::deleted_transfer_alert* alert);
+    virtual void on_state_changed(libed2k::state_changed_alert* alert);
+    virtual void on_transfer_added(libed2k::added_transfer_alert* alert);
+    virtual void on_portmap(libed2k::portmap_alert* alert);
     virtual void on_shutdown_completed();
     virtual void save_fast_resume(const boost::system::error_code& ec);
 };
