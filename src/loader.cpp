@@ -44,7 +44,7 @@ bool load_server_met(libed2k::server_met& sm, const std::string& filename) {
 
 ed2k_session_::ed2k_session_()
     : ses(0),
-      fs_timer_delay(boost::posix_time::millisec(10000)),
+      fs_timer_delay(boost::posix_time::seconds(10)),
       fs_timer(timer_ios, fs_timer_delay),
       alert_placeholder("", "", 10) {}
 
@@ -60,6 +60,7 @@ void ed2k_session_::start() {
     ses = new libed2k::session(print, "0.0.0.0", settings);
     ses->set_alert_mask(libed2k::alert::all_categories);
     ses->set_alert_dispatch(boost::bind(&ed2k_session_::on_alert, this, boost::placeholders::_1));
+    fs_timer.async_wait(boost::bind(&ed2k_session_::save_fast_resume, this, boost::asio::placeholders::error));
     timer_thr = new boost::thread(boost::bind(&libed2k::io_service::run, &timer_ios));
 }
 
@@ -250,24 +251,24 @@ void ed2k_session_::on_finished_transfer(libed2k::finished_transfer_alert* alert
 void ed2k_session_::on_save_resume_data_transfer(libed2k::save_resume_data_alert* alert) {
     if (!alert->m_handle.is_valid()) return;
     if (alert->m_handle.is_seed()) return;
+    // write fast resume data
+    std::vector<char> fastResumeData;
+    libed2k::bencode(std::back_inserter(fastResumeData), *alert->resume_data);
+    libed2k::transfer_resume_data trd(alert->m_handle.hash(), alert->m_handle.name(), alert->m_handle.size(), false,
+                                      fastResumeData);
+    std::string tcfg = alert->m_handle.save_path() +"/"+ alert->m_handle.name()+ ".ex";
     try {
-        // write fast resume data
-        std::vector<char> fastResumeData;
-        libed2k::bencode(std::back_inserter(fastResumeData), *alert->resume_data);
-        libed2k::transfer_resume_data trd(alert->m_handle.hash(), alert->m_handle.name(), alert->m_handle.size(), false,
-                                          fastResumeData);
-        std::string tcfg = alert->m_handle.save_path() + ".ex";
         std::ofstream fs(tcfg.c_str(), std::ios_base::out | std::ios_base::binary);
         if (fs) {
             libed2k::archive::ed2k_oarchive oa(fs);
             oa << trd;
             fs.close();
-            DBG("ed2k_session_: resume data save success on" << tcfg);
+            DBG("ed2k_session_: resume data save success on " << tcfg);
         } else {
             ERR("ed2k_session_: resume data save fail with open error on" << tcfg);
         }
     } catch (std::exception& e) {
-        ERR("ed2k_session_: resume data save fail with " << e.message() << " on" << tcfg);
+        ERR("ed2k_session_: resume data save fail with " << e.what() << " on" << tcfg);
     }
 }
 void ed2k_session_::on_resumed_data_transfer(libed2k::resumed_transfer_alert* alert) {
@@ -277,7 +278,7 @@ void ed2k_session_::on_paused_data_transfer(libed2k::paused_transfer_alert* aler
     DBG("ed2k_session_: on_paused_data_transfer" << alert->m_handle.hash());
 }
 void ed2k_session_::on_deleted_data_transfer(libed2k::deleted_transfer_alert* alert) {
-    DBG("ed2k_session_: on_deleted_data_transfer" << alert->m_handle.hash());
+    DBG("ed2k_session_: on_deleted_data_transfer" << alert->m_hash);
 }
 void ed2k_session_::on_shutdown_completed() { DBG("ed2k_session_: shutdown completed"); }
 
@@ -285,20 +286,27 @@ void ed2k_session_::save_fast_resume(const boost::system::error_code& ec) {
     if (ec == boost::asio::error::operation_aborted) {
         return;
     }
-    // actually we save nothing - only for test
-    std::vector<libed2k::transfer_handle> v = ses->get_transfers();
-    for (std::vector<libed2k::transfer_handle>::iterator i = v.begin(); i != v.end(); ++i) {
-        libed2k::transfer_handle h = *i;
-        if (!h.is_valid() || h.is_seed()) continue;
-        try {
-            if (h.status().state == libed2k::transfer_status::checking_files ||
-                h.status().state == libed2k::transfer_status::queued_for_checking)
-                continue;
-            if (h.need_save_resume_data()) {
-                h.save_resume_data();
+    if (ses) {
+        // actually we save nothing - only for test
+        std::vector<libed2k::transfer_handle> v = ses->get_transfers();
+        int saved=0;
+        for (std::vector<libed2k::transfer_handle>::iterator i = v.begin(); i != v.end(); ++i) {
+            libed2k::transfer_handle h = *i;
+            if (!h.is_valid() || h.is_seed()) continue;
+            try {
+                if (h.status().state == libed2k::transfer_status::checking_files ||
+                    h.status().state == libed2k::transfer_status::queued_for_checking)
+                    continue;
+                if (h.need_save_resume_data()) {
+                    h.save_resume_data();
+                    saved++;
+                }
+            } catch (libed2k::libed2k_exception& e) {
+                ERR("save error: " << e.what());
             }
-        } catch (libed2k::libed2k_exception& e) {
-            ERR("save error: " << e.what());
+        }
+        if(saved){
+            DBG("ed2k_session_: save_fast_resume for " << saved << " transfer");
         }
     }
     fs_timer.expires_at(fs_timer.expires_at() + fs_timer_delay);

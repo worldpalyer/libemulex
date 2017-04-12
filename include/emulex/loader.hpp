@@ -31,7 +31,6 @@ namespace emulex {
 // load node data from file.
 bool load_nodes(libed2k::kad_nodes_dat& knd, const std::string& filename);
 bool load_server_met(libed2k::server_met& sm, const std::string& filename);
-
 class ed2k_session_ {
    public:
     libed2k::fingerprint print;
