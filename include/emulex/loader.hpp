@@ -60,13 +60,15 @@ class ed2k_session_ {
                         unsigned int nCompleteSourcesCount, const std::string& strFileType,
                         const std::string& strFileExtension, const std::string& strCodec, unsigned int nMediaLength,
                         unsigned int nMediaBitrate, const std::string& strQuery);
-    virtual void add_transfer(const std::string& hash, const std::string& path, boost::uint64_t size,
-                              const std::vector<std::string>& parts = std::vector<std::string>(),
-                              const std::string& resources = "", bool seed = false);
+    virtual libed2k::transfer_handle add_transfer(const std::string& hash, const std::string& path,
+                                                  boost::uint64_t size,
+                                                  const std::vector<std::string>& parts = std::vector<std::string>(),
+                                                  const std::string& resources = "", bool seed = false);
     virtual std::vector<libed2k::transfer_handle> list_transfter();
-    virtual bool restore(std::string path);
-    virtual void pause(libed2k::md4_hash& hash);
-    virtual void resume(libed2k::md4_hash& hash);
+    virtual libed2k::transfer_handle restore_transfer(std::string path);
+    virtual libed2k::transfer_handle pause_transfer(libed2k::md4_hash& hash);
+    virtual libed2k::transfer_handle resume_transfer(libed2k::md4_hash& hash);
+    virtual libed2k::transfer_handle remove_transfer(libed2k::md4_hash& hash);
 
    protected:
     virtual void on_alert(libed2k::alert const& alert);
