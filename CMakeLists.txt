@@ -17,7 +17,7 @@ option (DHT_VERBOSE "Verbose output for DHT" FALSE)
 option (DEPS_DIR "the deps prefix location" FALSE)
 
 if (NOT DEPS_DIR)
-    set(DEPS_DIR "${PROJECT_SOURCE_DIR}/../deps")
+    set(DEPS_DIR "/usr/local/")
 endif()
 
 include(cmake/Environment.cmake)

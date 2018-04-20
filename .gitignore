@@ -41,3 +41,13 @@ CMakeLists.txt.user
 /unit/Debug
 
 unit/run_emulex_tests
+
+CMakeFiles
+
+CMakeCache.txt
+
+install_manifest.txt
+
+Makefile
+
+cmake_install.cmake

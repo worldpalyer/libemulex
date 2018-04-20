@@ -6,8 +6,8 @@
 namespace emulex {
 
 bool load_nodes(libed2k::kad_nodes_dat& knd, const std::string& filename) {
-    using libed2k::kad_nodes_dat;
     using libed2k::kad_entry;
+    using libed2k::kad_nodes_dat;
     DBG("File nodes: " << filename);
     std::ifstream fs(filename.c_str(), std::ios_base::binary | std::ios_base::in);
     if (fs) {
@@ -123,6 +123,8 @@ libed2k::transfer_handle ed2k_session_::add_transfer(const std::string& hash, co
 }
 
 std::vector<libed2k::transfer_handle> ed2k_session_::list_transfter() { return ses->get_transfers(); }
+
+libed2k::transfer_handle ed2k_session_::find_transfer(libed2k::md4_hash& hash) { return ses->find_transfer(hash); }
 
 libed2k::transfer_handle ed2k_session_::restore_transfer(std::string path) {
     libed2k::transfer_handle th;
@@ -307,18 +309,14 @@ void ed2k_session_::on_paused_data_transfer(libed2k::paused_transfer_alert* aler
 void ed2k_session_::on_deleted_data_transfer(libed2k::deleted_transfer_alert* alert) {
     DBG("ed2k_session_: on_deleted_data_transfer" << alert->m_hash);
 }
-void ed2k_session_::on_state_changed(libed2k::state_changed_alert* alert){
+void ed2k_session_::on_state_changed(libed2k::state_changed_alert* alert) {
     DBG("ed2k_session_: on_state_changed" << alert->m_handle.hash());
 }
-void ed2k_session_::on_transfer_added(libed2k::added_transfer_alert* alert){
+void ed2k_session_::on_transfer_added(libed2k::added_transfer_alert* alert) {
     DBG("ed2k_session_: on_transfer_added" << alert->m_handle.hash());
 }
-void ed2k_session_::on_portmap(libed2k::portmap_alert* alert){
-    DBG("ed2k_session_: on_portmap");
-}
-void ed2k_session_::on_portmap_error(libed2k::portmap_error_alert* alert){
-    DBG("ed2k_session_: on_portmap_error");
-}
+void ed2k_session_::on_portmap(libed2k::portmap_alert* alert) { DBG("ed2k_session_: on_portmap"); }
+void ed2k_session_::on_portmap_error(libed2k::portmap_error_alert* alert) { DBG("ed2k_session_: on_portmap_error"); }
 void ed2k_session_::on_shutdown_completed() { DBG("ed2k_session_: shutdown completed"); }
 
 void ed2k_session_::save_fast_resume(const boost::system::error_code& ec) {
@@ -370,4 +368,4 @@ void loader_::search_file(std::string query, std::string extension, boost::uint6
 }
 //
 // namespace emulex
-}
+}  // namespace emulex

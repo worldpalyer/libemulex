@@ -65,6 +65,7 @@ class ed2k_session_ {
                                                   const std::vector<std::string>& parts = std::vector<std::string>(),
                                                   const std::string& resources = "", bool seed = false);
     virtual std::vector<libed2k::transfer_handle> list_transfter();
+    virtual libed2k::transfer_handle find_transfer(libed2k::md4_hash& hash);
     virtual libed2k::transfer_handle restore_transfer(std::string path);
     virtual libed2k::transfer_handle pause_transfer(libed2k::md4_hash& hash);
     virtual libed2k::transfer_handle resume_transfer(libed2k::md4_hash& hash);
@@ -111,4 +112,4 @@ class loader_ : public ed2k_session_ {
 
 //
 // namespace emulex
-}
+}  // namespace emulex
