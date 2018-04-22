@@ -30,7 +30,9 @@ namespace emulex {
 
 // load node data from file.
 bool load_nodes(libed2k::kad_nodes_dat& knd, const std::string& filename);
+bool load_raw_nodes(libed2k::kad_nodes_dat& knd, char* raw, size_t length);
 bool load_server_met(libed2k::server_met& sm, const std::string& filename);
+bool load_raw_server_met(libed2k::server_met& sm, char* raw, size_t length);
 class ed2k_session_ {
    public:
     libed2k::fingerprint print;
@@ -50,7 +52,7 @@ class ed2k_session_ {
    public:
     ed2k_session_();
     virtual ~ed2k_session_();
-    virtual void start();
+    virtual void start(bool upnp);
     virtual void stop();
     virtual void server_connect(const std::string& name, const std::string& host, int port);
     virtual void slave_server_connect(const std::string& name, const std::string& host, int port);
@@ -78,6 +80,7 @@ class ed2k_session_ {
     virtual void on_server_status(libed2k::server_status_alert* alert);
     virtual void on_server_message(libed2k::server_message_alert* alert);
     virtual void on_server_identity(libed2k::server_identity_alert* alert);
+    virtual void on_server_connection_closed(libed2k::server_connection_closed* alert);
     //
     virtual void on_server_shared(libed2k::shared_files_alert* alert);
     virtual void on_finished_transfer(libed2k::finished_transfer_alert* alert);
@@ -105,6 +108,7 @@ class loader_ : public ed2k_session_ {
 
    public:
     loader_();
+    virtual ~loader_();
     virtual void search_file(std::string hash, HashType type);
     virtual void search_file(std::string query, std::string extension = "", boost::uint64_t min_size = 0,
                              boost::uint64_t max_size = 0);

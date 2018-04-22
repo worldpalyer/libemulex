@@ -6,13 +6,13 @@
 //#include <boost/asio.hpp>
 
 int main() {
-    LOGGER_INIT(LOG_ALL)
-    //emulex::db_interface db(new emulex::db_interface_);
+    LOGGER_INIT_FILE(LOG_ALL, "out.txt");
+    // emulex::db_interface db(new emulex::db_interface_);
     boost::asio::io_service ios;
     emulex::loader_ ld;
-    ld.start();
+    ld.start(true);
     // printf("start...\n");
     ios.run();
-    //sleep(1000);
+    // sleep(1000);
     printf("all end...\n");
 }

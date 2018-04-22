@@ -1,9 +1,14 @@
 
 #include "emulex/loader.hpp"
 #include <fstream>
+#include <streambuf>
 #include <libed2k/bencode.hpp>
+#include <boost/iostreams/device/array.hpp>
+#include <boost/iostreams/stream.hpp>
 
 namespace emulex {
+
+typedef boost::iostreams::stream_buffer<boost::iostreams::basic_array_source<char> > memory_buffer;
 
 bool load_nodes(libed2k::kad_nodes_dat& knd, const std::string& filename) {
     using libed2k::kad_entry;
@@ -25,6 +30,21 @@ bool load_nodes(libed2k::kad_nodes_dat& knd, const std::string& filename) {
     return true;
 }
 
+bool load_raw_nodes(libed2k::kad_nodes_dat& knd, char* raw, size_t length) {
+    using libed2k::kad_entry;
+    using libed2k::kad_nodes_dat;
+    memory_buffer buf(raw, length);
+    std::istream is(&buf);
+    libed2k::archive::ed2k_iarchive ifa(is);
+    try {
+        ifa >> knd;
+        return true;
+    } catch (libed2k::libed2k_exception& e) {
+        DBG("error on load nodes.dat " << e.what());
+        return false;
+    }
+}
+
 bool load_server_met(libed2k::server_met& sm, const std::string& filename) {
     std::ifstream ifs(filename, std::ios_base::binary);
     if (ifs) {
@@ -42,6 +62,19 @@ bool load_server_met(libed2k::server_met& sm, const std::string& filename) {
     return true;
 }
 
+bool load_raw_server_met(libed2k::server_met& sm, char* raw, size_t length) {
+    memory_buffer buf(raw, length);
+    std::istream is(&buf);
+    libed2k::archive::ed2k_iarchive ifa(is);
+    try {
+        ifa >> sm;
+        return true;
+    } catch (libed2k::libed2k_exception& e) {
+        DBG("error on load raw servers.met " << e.what() << " " << length);
+        return false;
+    }
+}
+
 ed2k_session_::ed2k_session_()
     : ses(0),
       fs_timer_delay(boost::posix_time::seconds(10)),
@@ -53,26 +86,29 @@ ed2k_session_::~ed2k_session_() {
         delete ses;
         ses = 0;
     }
+    DBG("ed2k_session_: session is freee");
 }
 
-void ed2k_session_::start() {
+void ed2k_session_::start(bool upnp) {
     DBG("ed2k_session_: start initial ed2k session by port:" << settings.listen_port);
     ses = new libed2k::session(print, "0.0.0.0", settings);
     ses->set_alert_mask(libed2k::alert::all_categories);
     ses->set_alert_dispatch(boost::bind(&ed2k_session_::on_alert, this, boost::placeholders::_1));
-    ses->start_upnp();
+    if (upnp) {
+        ses->start_upnp();
+    }
     fs_timer.async_wait(boost::bind(&ed2k_session_::save_fast_resume, this, boost::asio::placeholders::error));
     timer_thr = new boost::thread(boost::bind(&libed2k::io_service::run, &timer_ios));
 }
 
 void ed2k_session_::stop() {
+    if (timer_thr) {
+        timer_ios.stop();
+    }
     if (ses) {
         delete ses;
         ses = 0;
         on_shutdown_completed();
-    }
-    if (timer_thr) {
-        timer_ios.stop();
     }
 }
 
@@ -89,7 +125,11 @@ void ed2k_session_::slave_server_connect(const std::string& name, const std::str
 }
 
 void ed2k_session_::add_dht_node(const std::string& host, int port, const std::string& id) {
-    ses->add_dht_node(std::make_pair(host, port), id);
+    if (id.size()) {
+        ses->add_dht_node(std::make_pair(host, port), id);
+    } else {
+        ses->add_dht_router(std::make_pair(host, port));
+    }
 }
 
 void ed2k_session_::search(std::string hash) {
@@ -250,6 +290,8 @@ void ed2k_session_::on_alert(libed2k::alert const& alert) {
         on_portmap(p);
     } else if (libed2k::portmap_error_alert* p = dynamic_cast<libed2k::portmap_error_alert*>(alert_ptr)) {
         on_portmap_error(p);
+    } else if (libed2k::server_connection_closed* p = dynamic_cast<libed2k::server_connection_closed*>(alert_ptr)) {
+        on_server_connection_closed(p);
     } else {
         DBG("ed2k_session_: Unknown alert: " << alert_ptr->message());
     }
@@ -270,6 +312,10 @@ void ed2k_session_::on_server_message(libed2k::server_message_alert* alert) {
 void ed2k_session_::on_server_identity(libed2k::server_identity_alert* alert) {
     DBG("ed2k_session_: server_identity_alert: " << alert->server_hash << " name:  " << alert->server_name
                                                  << " descr: " << alert->server_descr);
+}
+void ed2k_session_::on_server_connection_closed(libed2k::server_connection_closed* alert) {
+    DBG("ed2k_session_: server_connection_closed: " << alert->name << " host:  " << alert->host
+                                                    << " port: " << alert->port);
 }
 void ed2k_session_::on_server_shared(libed2k::shared_files_alert* alert) {
     DBG("ed2k_session_: search RESULT: " << alert->m_files.m_collection.size());
@@ -351,6 +397,8 @@ void ed2k_session_::save_fast_resume(const boost::system::error_code& ec) {
 }
 //
 loader_::loader_() {}
+
+loader_::~loader_() { DBG("loader_: loader is free"); }
 
 void loader_::search_file(std::string hash, HashType type) {
     switch (type) {
